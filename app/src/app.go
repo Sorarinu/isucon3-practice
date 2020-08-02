@@ -456,7 +456,7 @@ func mypageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	rows, err := dbConn.Query("SELECT id, content, is_private, created_at, FROM memos WHERE user=? ORDER BY created_at DESC", user.Id)
+	rows, err := dbConn.Query("SELECT id, content, is_private, created_at FROM memos WHERE user=? ORDER BY created_at DESC", user.Id)
 	if err != nil {
 		serverError(w, err)
 		return
