@@ -22,9 +22,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
-	"github.com/newrelic/go-agent/v3/newrelic"
+	// "github.com/newrelic/go-agent/v3/newrelic"
 
-	_ "net/http/pprof"
+	// _ "net/http/pprof"
 )
 
 const (
@@ -105,24 +105,24 @@ var (
 )
 
 func main() {
-	// NewRelic
-	app, err := newrelic.NewApplication(
-		newrelic.ConfigAppName("isucon3"),
-		newrelic.ConfigLicense("54ced2c55e8c87ff8e26479e7fd0b562abe5NRAL"),
-		newrelic.ConfigDistributedTracerEnabled(true),
-	)
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
-
-	// pprof start
-	runtime.SetBlockProfileRate(1)
-	runtime.SetMutexProfileFraction(1)
-	go func() {
-		log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
-	}()
-	// prof end
+	// // NewRelic
+	// app, err := newrelic.NewApplication(
+	// 	newrelic.ConfigAppName("isucon3"),
+	// 	newrelic.ConfigLicense("54ced2c55e8c87ff8e26479e7fd0b562abe5NRAL"),
+	// 	newrelic.ConfigDistributedTracerEnabled(true),
+	// )
+	// if err != nil {
+	// 	log.Fatal(err)
+	// 	os.Exit(1)
+	// }
+	//
+	// // pprof start
+	// runtime.SetBlockProfileRate(1)
+	// runtime.SetMutexProfileFraction(1)
+	// go func() {
+	// 	log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
+	// }()
+	// // prof end
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
