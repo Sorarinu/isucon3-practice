@@ -314,7 +314,8 @@ func recentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	totalCount, _ = strconv.Atoi(count.(string))
 
-	recentIds, err := rdb.LRange(ctx,  "recent", int64(memosPerPage*page), int64(memosPerPage)).Result()
+	recentIds, err := rdb.LRange(ctx,  "recent", int64(memosPerPage*page),
+		int64(memosPerPage*page) + int64(memosPerPage)).Result()
 	if err != nil {
 		serverError(w, err)
 		return
@@ -329,9 +330,9 @@ func recentHandler(w http.ResponseWriter, r *http.Request) {
 SELECT memos.id, memos.content, memos.is_private, memos.created_at, users.username
 FROM memos
 LEFT JOIN users ON memos.user = users.id
-WHERE memos.id in (?)
+WHERE memos.id in (` + ids + `)
 ORDER BY created_at DESC, id DESC;`
-	rows, err := dbConn.Query(query, ids)
+	rows, err := dbConn.Query(query)
 	if err != nil {
 		serverError(w, err)
 		return
