@@ -599,6 +599,12 @@ func memoPostHandler(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
+	if isPrivate == 0 {
+		rdb := NewRedisClient()
+		defer rdb.Close()
+		rdb.Do(ctx, "incr", "count")
+	}
+
 	newId, _ := result.LastInsertId()
 	http.Redirect(w, r, fmt.Sprintf("/memo/%d", newId), http.StatusFound)
 }
