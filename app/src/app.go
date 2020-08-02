@@ -106,7 +106,6 @@ func main() {
 	app, err := newrelic.NewApplication(
 		newrelic.ConfigAppName("isucon3"),
 		newrelic.ConfigLicense("54ced2c55e8c87ff8e26479e7fd0b562abe5NRAL"),
-		newrelic.ConfigDebugLogger(os.Stdout),
 		newrelic.ConfigDistributedTracerEnabled(true),
 	)
 	if err != nil {
