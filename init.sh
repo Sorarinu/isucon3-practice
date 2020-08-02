@@ -2,6 +2,6 @@
 
 echo 'init process'
 
-cat init.sql | mysql -uisucon -pisucon
-
-sh ./redis-init.sh
+cat init.sql | mysql -uisucon -pisucon &
+sh ./redis-init.sh &
+wait
