@@ -314,7 +314,7 @@ func recentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	totalCount, _ = strconv.Atoi(count.(string))
 
-	recentIds, err := rdb.LRange(ctx,  "recent", memosPerPage*page, memosPerPage).Result()
+	recentIds, err := rdb.LRange(ctx,  "recent", int64(memosPerPage*page), int64(memosPerPage)).Result()
 	if err != nil {
 		serverError(w, err)
 		return
