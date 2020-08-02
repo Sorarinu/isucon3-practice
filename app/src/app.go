@@ -313,13 +313,25 @@ func recentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	totalCount, _ = strconv.Atoi(count.(string))
 
+	recentIds, err := rdb.LRange(ctx,  "recent", int64(memosPerPage*page),
+		int64(memosPerPage*page) + int64(memosPerPage)).Result()
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	ids := ""
+	for _, id := range recentIds {
+		ids += id + ","
+	}
+	ids = strings.TrimRight(ids, ",")
+
 	query := `
-SELECT memos.id, memos.content, memos.is_private, memos.created_at, users.username 
-FROM memos FORCE INDEX (memos_idx_is_private_created_at) 
-LEFT JOIN users ON memos.user = users.id 
-WHERE is_private = 0 
-ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?;`
-	rows, err := dbConn.Query(query, memosPerPage, memosPerPage*page)
+SELECT memos.id, memos.content, memos.is_private, memos.created_at, users.username
+FROM memos
+LEFT JOIN users ON memos.user = users.id
+WHERE memos.id in (` + ids + `)
+ORDER BY created_at DESC, id DESC;`
+	rows, err := dbConn.Query(query)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -598,13 +610,13 @@ func memoPostHandler(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
+	newId, _ := result.LastInsertId()
 	if isPrivate == 0 {
 		rdb := NewRedisClient()
 		defer rdb.Close()
+		rdb.Do(ctx, "RPUSH", "recent", newId)
 		rdb.Do(ctx, "incr", "count")
 	}
-
-	newId, _ := result.LastInsertId()
 	http.Redirect(w, r, fmt.Sprintf("/memo/%d", newId), http.StatusFound)
 }
 
