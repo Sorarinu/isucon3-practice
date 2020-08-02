@@ -4,4 +4,4 @@ echo 'init process'
 
 cat init.sql | mysql -uisucon -pisucon
 
-redis-cli set count 20540
+sh ./redis-init.sh
