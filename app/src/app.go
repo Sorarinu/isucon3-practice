@@ -58,6 +58,7 @@ type User struct {
 type Memo struct {
 	Id        int
 	User      int
+	Title     string
 	Content   string
 	IsPrivate int
 	CreatedAt string
@@ -87,10 +88,6 @@ var (
 	fmap       = template.FuncMap{
 		"url_for": func(path string) string {
 			return baseUrl.String() + path
-		},
-		"first_line": func(s string) string {
-			sl := strings.Split(s, "\n")
-			return sl[0]
 		},
 		"get_token": func(session *sessions.Session) interface{} {
 			return session.Values["token"]
@@ -256,7 +253,7 @@ func topHandler(w http.ResponseWriter, r *http.Request) {
 	totalCount, _ = strconv.Atoi(count.(string))
 
 	query := `
-SELECT memos.id, memos.content, memos.is_private, memos.created_at, users.username 
+SELECT memos.id, memos.title, memos.is_private, memos.created_at, users.username 
 FROM memos FORCE INDEX (memos_idx_is_private_created_at) 
 LEFT JOIN users ON memos.user = users.id 
 WHERE is_private = 0 
@@ -269,7 +266,7 @@ ORDER BY created_at DESC, id DESC LIMIT ?;`
 	memos := make(Memos, 0)
 	for rows.Next() {
 		memo := Memo{}
-		rows.Scan(&memo.Id, &memo.Content, &memo.IsPrivate, &memo.CreatedAt, &memo.Username)
+		rows.Scan(&memo.Id, &memo.Title, &memo.IsPrivate, &memo.CreatedAt, &memo.Username)
 		memos = append(memos, &memo)
 	}
 	rows.Close()
@@ -468,7 +465,7 @@ func mypageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	rows, err := dbConn.Query("SELECT id, content, is_private, created_at FROM memos WHERE user=? ORDER BY created_at DESC", user.Id)
+	rows, err := dbConn.Query("SELECT id, title, is_private, created_at FROM memos WHERE user=? ORDER BY created_at DESC", user.Id)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -476,7 +473,7 @@ func mypageHandler(w http.ResponseWriter, r *http.Request) {
 	memos := make(Memos, 0)
 	for rows.Next() {
 		memo := Memo{}
-		rows.Scan(&memo.Id, &memo.Content, &memo.IsPrivate, &memo.CreatedAt)
+		rows.Scan(&memo.Id, &memo.Title, &memo.IsPrivate, &memo.CreatedAt)
 		memos = append(memos, &memo)
 	}
 	v := &View{
@@ -603,8 +600,8 @@ func memoPostHandler(w http.ResponseWriter, r *http.Request) {
 		isPrivate = 0
 	}
 	result, err := dbConn.Exec(
-		"INSERT INTO memos (user, content, is_private, created_at) VALUES (?, ?, ?, now())",
-		user.Id, r.FormValue("content"), isPrivate,
+		"INSERT INTO memos (user, title, content, is_private, created_at) VALUES (?, ?, ?, ?, now())",
+		user.Id, strings.Split(r.FormValue("content"), "\n"), r.FormValue("content"), isPrivate,
 	)
 	if err != nil {
 		serverError(w, err)
