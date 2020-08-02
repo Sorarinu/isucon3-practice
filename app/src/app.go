@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
@@ -15,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-redis/redis/v8"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gomarkdown/markdown"
 	"github.com/gorilla/mux"
@@ -80,6 +82,7 @@ type View struct {
 
 var (
 	dbConnPool chan *sql.DB
+	ctx        = context.Background()
 	baseUrl    *url.URL
 	fmap       = template.FuncMap{
 		"url_for": func(path string) string {
@@ -242,16 +245,15 @@ func topHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 	user := getUser(w, r, dbConn, session)
 
+	rdb := NewRedisClient()
+	defer rdb.Close()
 	var totalCount int
-	rows, err := dbConn.Query("SELECT count(1) AS c FROM memos WHERE is_private=0")
+	count, err := rdb.Do(ctx, "get", "count").Result()
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	if rows.Next() {
-		rows.Scan(&totalCount)
-	}
-	rows.Close()
+	totalCount, _ = strconv.Atoi(count.(string))
 
 	query := `
 SELECT memos.id, memos.content, memos.is_private, memos.created_at, users.username 
@@ -259,7 +261,7 @@ FROM memos FORCE INDEX (memos_idx_is_private_created_at)
 LEFT JOIN users ON memos.user = users.id 
 WHERE is_private = 0 
 ORDER BY created_at DESC, id DESC LIMIT ?;`
-	rows, err = dbConn.Query(query, memosPerPage)
+	rows, err := dbConn.Query(query, memosPerPage)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -301,16 +303,15 @@ func recentHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	page, _ := strconv.Atoi(vars["page"])
 
-	rows, err := dbConn.Query("SELECT count(1) AS c FROM memos WHERE is_private=0")
+	rdb := NewRedisClient()
+	defer rdb.Close()
+	var totalCount int
+	count, err := rdb.Do(ctx, "get", "count").Result()
 	if err != nil {
 		serverError(w, err)
 		return
 	}
-	var totalCount int
-	if rows.Next() {
-		rows.Scan(&totalCount)
-	}
-	rows.Close()
+	totalCount, _ = strconv.Atoi(count.(string))
 
 	query := `
 SELECT memos.id, memos.content, memos.is_private, memos.created_at, users.username 
@@ -318,7 +319,7 @@ FROM memos FORCE INDEX (memos_idx_is_private_created_at)
 LEFT JOIN users ON memos.user = users.id 
 WHERE is_private = 0 
 ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?;`
-	rows, err = dbConn.Query(query, memosPerPage, memosPerPage*page)
+	rows, err := dbConn.Query(query, memosPerPage, memosPerPage*page)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -597,6 +598,21 @@ func memoPostHandler(w http.ResponseWriter, r *http.Request) {
 		serverError(w, err)
 		return
 	}
+	if isPrivate == 0 {
+		rdb := NewRedisClient()
+		defer rdb.Close()
+		rdb.Do(ctx, "incr", "count")
+	}
+
 	newId, _ := result.LastInsertId()
 	http.Redirect(w, r, fmt.Sprintf("/memo/%d", newId), http.StatusFound)
+}
+
+func NewRedisClient() *redis.Client {
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "0.0.0.0:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+	return rdb
 }
