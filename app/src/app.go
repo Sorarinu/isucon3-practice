@@ -22,9 +22,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
-	"github.com/newrelic/go-agent/v3/newrelic"
+	// "github.com/newrelic/go-agent/v3/newrelic"
 
-	_ "net/http/pprof"
+	// _ "net/http/pprof"
 )
 
 const (
@@ -102,24 +102,24 @@ var (
 )
 
 func main() {
-	// NewRelic
-	app, err := newrelic.NewApplication(
-		newrelic.ConfigAppName("isucon3"),
-		newrelic.ConfigLicense("54ced2c55e8c87ff8e26479e7fd0b562abe5NRAL"),
-		newrelic.ConfigDistributedTracerEnabled(true),
-	)
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
-
-	// pprof start
-	runtime.SetBlockProfileRate(1)
-	runtime.SetMutexProfileFraction(1)
-	go func() {
-		log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
-	}()
-	// prof end
+	// // NewRelic
+	// app, err := newrelic.NewApplication(
+	// 	newrelic.ConfigAppName("isucon3"),
+	// 	newrelic.ConfigLicense("54ced2c55e8c87ff8e26479e7fd0b562abe5NRAL"),
+	// 	newrelic.ConfigDistributedTracerEnabled(true),
+	// )
+	// if err != nil {
+	// 	log.Fatal(err)
+	// 	os.Exit(1)
+	// }
+	//
+	// // pprof start
+	// runtime.SetBlockProfileRate(1)
+	// runtime.SetMutexProfileFraction(1)
+	// go func() {
+	// 	log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
+	// }()
+	// // prof end
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -146,14 +146,14 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.HandleFunc(newrelic.WrapHandleFunc(app, "/", topHandler))
-	r.HandleFunc(newrelic.WrapHandleFunc(app, "/signin", signinHandler)).Methods("GET", "HEAD")
-	r.HandleFunc(newrelic.WrapHandleFunc(app, "/signin", signinPostHandler)).Methods("POST")
-	r.HandleFunc(newrelic.WrapHandleFunc(app, "/signout", signoutHandler))
-	r.HandleFunc(newrelic.WrapHandleFunc(app, "/mypage", mypageHandler))
-	r.HandleFunc(newrelic.WrapHandleFunc(app, "/memo/{memo_id}", memoHandler)).Methods("GET", "HEAD")
-	r.HandleFunc(newrelic.WrapHandleFunc(app, "/memo", memoPostHandler)).Methods("POST")
-	r.HandleFunc(newrelic.WrapHandleFunc(app, "/recent/{page:[0-9]+}", recentHandler))
+	r.HandleFunc("/", topHandler)
+	r.HandleFunc("/signin", signinHandler).Methods("GET", "HEAD")
+	r.HandleFunc("/signin", signinPostHandler).Methods("POST")
+	r.HandleFunc("/signout", signoutHandler)
+	r.HandleFunc("/mypage", mypageHandler)
+	r.HandleFunc("/memo/{memo_id}", memoHandler).Methods("GET", "HEAD")
+	r.HandleFunc("/memo", memoPostHandler).Methods("POST")
+	r.HandleFunc("/recent/{page:[0-9]+}", recentHandler)
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
 	http.Handle("/", r)
 	log.Fatal(http.ListenAndServe(listenAddr, nil))
