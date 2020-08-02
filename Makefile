@@ -23,3 +23,6 @@ restart:
 kataribe:
 	cat /var/log/nginx/access.log | kataribe
 
+pprof:
+	go tool pprof -http=0.0.0.0:1080 /home/isucon/webapp/go/  http://localhost:6060/debug/pprof/profile
+.PHONY: pprof
