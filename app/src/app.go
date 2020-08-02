@@ -600,7 +600,7 @@ func memoPostHandler(w http.ResponseWriter, r *http.Request) {
 		isPrivate = 0
 	}
 	result, err := dbConn.Exec(
-		"INSERT INTO memos (user, title, content, is_private, created_at) VALUES (?, ?, ?, now())",
+		"INSERT INTO memos (user, title, content, is_private, created_at) VALUES (?, ?, ?, ?, now())",
 		user.Id, strings.Split(r.FormValue("content"), "\n"), r.FormValue("content"), isPrivate,
 	)
 	if err != nil {
