@@ -323,7 +323,7 @@ func recentHandler(w http.ResponseWriter, r *http.Request) {
 	ids = strings.TrimRight(ids, ",")
 
 	query := `
-SELECT memos.id, memos.content, memos.is_private, memos.created_at, users.username
+SELECT memos.id, memos.title, memos.created_at, users.username
 FROM memos
 LEFT JOIN users ON memos.user = users.id
 WHERE memos.id in (` + ids + `)
@@ -336,7 +336,7 @@ ORDER BY created_at DESC, id DESC;`
 	memos := make(Memos, 0)
 	for rows.Next() {
 		memo := Memo{}
-		rows.Scan(&memo.Id, &memo.Content, &memo.IsPrivate, &memo.CreatedAt, &memo.Username)
+		rows.Scan(&memo.Id, &memo.Title, &memo.CreatedAt, &memo.Username)
 		memos = append(memos, &memo)
 	}
 	if len(memos) == 0 {
