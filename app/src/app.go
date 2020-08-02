@@ -1,15 +1,10 @@
 package main
 
 import (
-	"github.com/gorilla/sessions"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/gomarkdown/markdown"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/gorilla/mux"
-	"github.com/gorilla/securecookie"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -20,17 +15,24 @@ import (
 	"strconv"
 	"strings"
 
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/gomarkdown/markdown"
+	"github.com/gorilla/mux"
+	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
+	"github.com/newrelic/go-agent/v3/newrelic"
+
 	_ "net/http/pprof"
 )
 
 const (
-	memosPerPage       = 100
-	listenAddr         = ":5000"
-	sessionName        = "isucon_session"
-	tmpDir             = "/tmp/"
-	markdownCommand    = "../bin/markdown"
-	dbConnPoolSize     = 10
-	sessionSecret      = "kH<{11qpic*gf0e21YK7YtwyUvE9l<1r>yX8R-Op"
+	memosPerPage    = 100
+	listenAddr      = ":5000"
+	sessionName     = "isucon_session"
+	tmpDir          = "/tmp/"
+	markdownCommand = "../bin/markdown"
+	dbConnPoolSize  = 10
+	sessionSecret   = "kH<{11qpic*gf0e21YK7YtwyUvE9l<1r>yX8R-Op"
 )
 
 type Config struct {
@@ -100,6 +102,18 @@ var (
 )
 
 func main() {
+	// NewRelic
+	app, err := newrelic.NewApplication(
+		newrelic.ConfigAppName("isucon3"),
+		newrelic.ConfigLicense("54ced2c55e8c87ff8e26479e7fd0b562abe5NRAL"),
+		newrelic.ConfigDebugLogger(os.Stdout),
+		newrelic.ConfigDistributedTracerEnabled(true),
+	)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
 	// pprof start
 	runtime.SetBlockProfileRate(1)
 	runtime.SetMutexProfileFraction(1)
@@ -133,14 +147,14 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", topHandler)
-	r.HandleFunc("/signin", signinHandler).Methods("GET", "HEAD")
-	r.HandleFunc("/signin", signinPostHandler).Methods("POST")
-	r.HandleFunc("/signout", signoutHandler)
-	r.HandleFunc("/mypage", mypageHandler)
-	r.HandleFunc("/memo/{memo_id}", memoHandler).Methods("GET", "HEAD")
-	r.HandleFunc("/memo", memoPostHandler).Methods("POST")
-	r.HandleFunc("/recent/{page:[0-9]+}", recentHandler)
+	r.HandleFunc(newrelic.WrapHandleFunc(app, "/", topHandler))
+	r.HandleFunc(newrelic.WrapHandleFunc(app, "/signin", signinHandler)).Methods("GET", "HEAD")
+	r.HandleFunc(newrelic.WrapHandleFunc(app, "/signin", signinPostHandler)).Methods("POST")
+	r.HandleFunc(newrelic.WrapHandleFunc(app, "/signout", signoutHandler))
+	r.HandleFunc(newrelic.WrapHandleFunc(app, "/mypage", mypageHandler))
+	r.HandleFunc(newrelic.WrapHandleFunc(app, "/memo/{memo_id}", memoHandler)).Methods("GET", "HEAD")
+	r.HandleFunc(newrelic.WrapHandleFunc(app, "/memo", memoPostHandler)).Methods("POST")
+	r.HandleFunc(newrelic.WrapHandleFunc(app, "/recent/{page:[0-9]+}", recentHandler))
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
 	http.Handle("/", r)
 	log.Fatal(http.ListenAndServe(listenAddr, nil))
