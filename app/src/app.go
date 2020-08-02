@@ -539,7 +539,7 @@ func memoHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		cond = "AND is_private=0"
 	}
-	rows, err = dbConn.Query("SELECT id, content, is_private, created_at, updated_at FROM memos WHERE user=? "+cond+" ORDER BY created_at", memo.User)
+	rows, err = dbConn.Query("SELECT id FROM memos WHERE user=? "+cond+" ORDER BY created_at", memo.User)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -547,7 +547,7 @@ func memoHandler(w http.ResponseWriter, r *http.Request) {
 	memos := make(Memos, 0)
 	for rows.Next() {
 		m := Memo{}
-		rows.Scan(&m.Id, &m.Content, &m.IsPrivate, &m.CreatedAt, &m.UpdatedAt)
+		rows.Scan(&m.Id)
 		memos = append(memos, &m)
 	}
 	rows.Close()
